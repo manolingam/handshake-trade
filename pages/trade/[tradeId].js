@@ -160,7 +160,7 @@ const Trade = ({ tradeId }) => {
         if (status === 1) {
           const allowance = await getAllowance(
             context.ethersProvider,
-            tradeWith.tokenAddress,
+            trade.requiredTokenAddress,
             context.signerAddress,
             CONTRACT_ADDRESSES[context.chainId]
           );
@@ -415,6 +415,7 @@ const Trade = ({ tradeId }) => {
           </HStack>
 
           <br />
+
           {new Date() > new Date(trade.expiryTimestamp * 1000) &&
           trade.tradeStatus !== 'Withdrawn' ? (
             <Flex
@@ -451,9 +452,10 @@ const Trade = ({ tradeId }) => {
               )}
             </Flex>
           ) : (
-            context.signerAddress.toLowerCase() === trade.receiverAddress && (
+            context.signerAddress.toLowerCase() === trade.receiverAddress &&
+            trade.tradeStatus !== 'Completed' && (
               <>
-                {!needAllowance && trade.tradeStatus !== 'Completed' && (
+                {!needAllowance && (
                   <Button
                     bg='black'
                     color='white'
@@ -472,7 +474,7 @@ const Trade = ({ tradeId }) => {
                     Execute trade
                   </Button>
                 )}
-                {needAllowance && trade.tradeStatus !== 'Completed' && (
+                {needAllowance && (
                   <Button
                     mt='1rem'
                     ml='auto'

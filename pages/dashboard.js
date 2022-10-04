@@ -109,17 +109,37 @@ const Dashboard = () => {
       {!fetching &&
         (context.signerAddress ? (
           <>
-            <Flex w='100%' alignItems='center'>
-              <Text
-                maxW='350px'
-                color='black'
-                p='5px'
-                fontFamily='figTree'
-                mr='auto'
-                fontSize='1.2rem'
-              >
-                Your trades
-              </Text>
+            <Flex
+              w='100%'
+              direction='row'
+              alignItems='center'
+              justifyContent='space-between'
+            >
+              <HStack>
+                <Text
+                  maxW='350px'
+                  color='black'
+                  p='5px'
+                  fontFamily='figTree'
+                  mr='auto'
+                  fontSize='1.2rem'
+                >
+                  Your trades
+                </Text>
+                <Button
+                  bg='black'
+                  color='white'
+                  mx='auto'
+                  mt='20px'
+                  fontSize='.8rem'
+                  onClick={fetchTrades}
+                  _hover={{
+                    opacity: 0.8
+                  }}
+                >
+                  Refresh
+                </Button>
+              </HStack>
               <Tabs
                 fontFamily='openSans'
                 color='black'
@@ -350,24 +370,9 @@ const Dashboard = () => {
             )}
 
             {currentRecords.length == 0 && (
-              <Flex direction='column' my='auto'>
-                <Text fontFamily='figTree' mt='50px'>
-                  No trades found for the selected category or try refreshing.
-                </Text>
-                <Button
-                  bg='black'
-                  color='white'
-                  mx='auto'
-                  mt='20px'
-                  fontSize='.8rem'
-                  onClick={fetchTrades}
-                  _hover={{
-                    opacity: 0.8
-                  }}
-                >
-                  Refresh
-                </Button>
-              </Flex>
+              <Text fontFamily='figTree' mt='50px'>
+                No trades found for the selected category or try refreshing.
+              </Text>
             )}
 
             {totalPages > 0 && (
