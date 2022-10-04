@@ -164,6 +164,7 @@ const Trade = ({ tradeId }) => {
             context.signerAddress,
             CONTRACT_ADDRESSES[context.chainId]
           );
+          triggerToast('allowance set successfully.');
           setSpendAllowance(Number(utils.formatEther(allowance)).toFixed(0));
           setNeedAllowance(false);
           setTxHash('');
@@ -173,7 +174,6 @@ const Trade = ({ tradeId }) => {
       }
     } catch (err) {
       console.log(err);
-      triggerToast('transaction cancelled..');
     }
     setLoading(false);
   };
@@ -478,6 +478,7 @@ const Trade = ({ tradeId }) => {
                     ml='auto'
                     bg='black'
                     color='white'
+                    fontSize='.8rem'
                     onClick={setAllowance}
                     isLoading={loading}
                     _hover={{
