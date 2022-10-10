@@ -14,7 +14,8 @@ import {
   useToast,
   Box,
   SimpleGrid,
-  Link as ChakraLink
+  Link as ChakraLink,
+  HStack
 } from '@chakra-ui/react';
 import { utils } from 'ethers';
 import { useRouter } from 'next/router';
@@ -27,7 +28,8 @@ import {
   getTokenTicker,
   getAllowance,
   approveSpender,
-  createTrade
+  createTrade,
+  getLatestTradeId
 } from '../utils/web3';
 
 const UNIX_PER_MINUTE = 60;
@@ -59,6 +61,8 @@ export default function Home() {
   const [txHash, setTxHash] = useState('');
   const [needAllowance, setNeedAllowance] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [latestTradeId, setLatestTradeId] = useState(null);
 
   const setAllowance = async () => {
     setLoading(true);
@@ -129,7 +133,11 @@ export default function Home() {
         if (status === 1) {
           triggerToast('trade successfully created.');
           setTxHash('');
-          router.push('/dashboard');
+          const _tradeId = await getLatestTradeId(
+            context.ethersProvider,
+            CONTRACT_ADDRESSES[context.chainId]
+          );
+          setLatestTradeId(Number(_tradeId));
         }
       }
     } catch (err) {
@@ -220,230 +228,303 @@ export default function Home() {
   }, [tradeFor.tokenAddress]);
 
   return (
-    <Flex w='80%' direction='column' alignItems='center' my='auto'>
-      <Text fontFamily='openSans' mr='auto' my='2rem'>
-        Trade any erc20 with any other erc20 peer to peer with your friend or
-        anyone trustless.
-      </Text>
-
-      <SimpleGrid w='100%' columns='2' gap='1rem'>
-        <Flex
-          w='100%'
-          direction='column'
-          bg='white'
-          boxShadow='rgb(0 0 0 / 1%) 0px 0px 1px, rgb(0 0 0 / 4%) 0px 4px 8px, rgb(0 0 0 / 4%) 0px 16px 24px, rgb(0 0 0 / 1%) 0px 24px 32px'
-          borderRadius='1rem'
-          p='2rem'
-        >
-          <Flex direction='row' alignItems='center'>
-            <Text
-              fontFamily='figTree'
-              color='blackDark'
-              py='1rem'
-              mr='10px'
-              fontSize='1rem'
-              fontWeight='bold'
-            >
-              Trade with
-            </Text>
-            <Tooltip label='The token you want to sell' placement='right'>
-              <i className='fa-solid fa-circle-question'></i>
-            </Tooltip>
-          </Flex>
-          <Flex direction='row'>
-            <Input
-              placeholder='ERC20 address'
-              border='none'
-              bg='rgb(247, 248, 250)'
-              onChange={(e) => {
-                setTradeWith((prevState) => ({
-                  ...prevState,
-                  tokenAddress: e.target.value
-                }));
-                setNeedAllowance(false);
-              }}
-              mr='10px'
-              fontSize='.8rem'
-            />
-            <NumberInput min={1} maxW={24}>
-              <NumberInputField
-                placeholder='Qty'
-                border='none'
-                bg='rgb(247, 248, 250)'
-                onChange={(e) => {
-                  setTradeWith((prevState) => ({
-                    ...prevState,
-                    numberOfTokens: e.target.value
-                  }));
-                  setNeedAllowance(false);
-                }}
-                fontSize='.8rem'
-              />
-            </NumberInput>
-          </Flex>
-
-          <Tag
-            ml='auto'
-            mt='5px'
+    <Flex w='80%' direction='column' alignItems='center'>
+      {!latestTradeId && (
+        <>
+          <Text
             fontFamily='figTree'
-          >{`Your balance: ${tradeWith.walletBalance} ${tradeWith.tokenTicker}`}</Tag>
-        </Flex>
+            mr='auto'
+            mt='2rem'
+            mb='10px'
+            fontSize='1.2rem'
+          >
+            Trade any erc20 with any other erc20 peer to peer with your friend
+            or anyone trustless.
+          </Text>
 
-        <Flex
-          w='100%'
-          direction='column'
-          bg='white'
-          boxShadow='rgb(0 0 0 / 1%) 0px 0px 1px, rgb(0 0 0 / 4%) 0px 4px 8px, rgb(0 0 0 / 4%) 0px 16px 24px, rgb(0 0 0 / 1%) 0px 24px 32px'
-          borderRadius='1rem'
-          p='2rem'
-        >
-          <Flex direction='row' alignItems='center'>
-            <Text
-              fontFamily='figTree'
-              color='blackDark'
-              py='1rem'
-              mr='10px'
-              fontSize='1rem'
-              fontWeight='bold'
-            >
-              Trade for
-            </Text>
-            <Tooltip label='The token you want to buy.' placement='right'>
-              <i className='fa-solid fa-circle-question'></i>
-            </Tooltip>
-          </Flex>
-          <Flex direction='row'>
-            <Input
-              placeholder='ERC20 address'
-              border='none'
-              bg='rgb(247, 248, 250)'
-              onChange={(e) => {
-                setTradeFor((prevState) => ({
-                  ...prevState,
-                  tokenAddress: e.target.value
-                }));
-                setNeedAllowance(false);
-              }}
-              mr='10px'
-              fontSize='.8rem'
-            />
-            <NumberInput min={1} maxW={24}>
-              <NumberInputField
-                placeholder='Qty'
-                border='none'
-                bg='rgb(247, 248, 250)'
-                onChange={(e) => {
-                  setTradeFor((prevState) => ({
-                    ...prevState,
-                    numberOfTokens: e.target.value
-                  }));
-                  setNeedAllowance(false);
-                }}
-                fontSize='.8rem'
-              />
-            </NumberInput>
-          </Flex>
-
-          <Tag
-            ml='auto'
-            mt='5px'
+          <Text
             fontFamily='figTree'
-          >{`Your balance: ${tradeFor.walletBalance} ${tradeFor.tokenTicker}`}</Tag>
-        </Flex>
-      </SimpleGrid>
-
-      <Flex
-        w='100%'
-        direction='row'
-        justifyContent='space-between'
-        alignItems='center'
-      >
-        <FormControl isRequired fontFamily='figTree' color='black' py='1rem'>
-          <FormLabel as='legend'>Trade expiry duration (in minutes)</FormLabel>
-          <RadioBox
-            stack='horizontal'
-            options={['5', '15', '30']}
-            updateRadio={setExpiryDuration}
-            name='expiry_duration'
-            defaultValue={expiryDuration}
-            value={expiryDuration}
-          />
-        </FormControl>
-
-        <FormControl isRequired fontFamily='figTree' color='black' py='1rem'>
-          <FormLabel as='legend'>Address of the receiver</FormLabel>
-          <Input
-            placeholder='Wallet address'
-            border='none'
-            bg='rgb(247, 248, 250)'
-            onChange={(e) => {
-              setReceiverAddress(e.target.value);
-              setNeedAllowance(false);
-            }}
-            mr='10px'
+            mr='auto'
+            color='#0057B7'
             fontSize='.8rem'
-          />
-        </FormControl>
-      </Flex>
+            fontStyle='italic'
+          >
+            A Trade Fee of 0.003 eth is required for all trades & the proceeds
+            are donated to UkraineDAO.
+          </Text>
 
-      {!needAllowance && (
-        <Button
-          mt='1rem'
-          ml='auto'
-          bg='black'
-          color='white'
-          isDisabled={
-            !context.signerAddress ||
-            !utils.isAddress(tradeWith.tokenAddress) ||
-            !tradeWith.numberOfTokens ||
-            !utils.isAddress(receiverAddress) ||
-            !utils.isAddress(tradeFor.tokenAddress) ||
-            !tradeFor.numberOfTokens
-          }
-          isLoading={loading}
-          onClick={async () => {
-            setLoading(true);
-            await createOffer();
-            setLoading(false);
-          }}
-          _hover={{
-            opacity: 0.8
-          }}
-        >
-          Create Offer
-        </Button>
+          <SimpleGrid w='100%' columns='2' gap='1rem'>
+            <Flex
+              w='100%'
+              direction='column'
+              bg='white'
+              boxShadow='rgb(0 0 0 / 1%) 0px 0px 1px, rgb(0 0 0 / 4%) 0px 4px 8px, rgb(0 0 0 / 4%) 0px 16px 24px, rgb(0 0 0 / 1%) 0px 24px 32px'
+              borderRadius='1rem'
+              p='2rem'
+            >
+              <Flex direction='row' alignItems='center'>
+                <Text
+                  fontFamily='figTree'
+                  color='blackDark'
+                  py='1rem'
+                  mr='10px'
+                  fontSize='1rem'
+                  fontWeight='bold'
+                >
+                  Trade with
+                </Text>
+                <Tooltip label='The token you want to sell' placement='right'>
+                  <i className='fa-solid fa-circle-question'></i>
+                </Tooltip>
+              </Flex>
+              <Flex direction='row'>
+                <Input
+                  placeholder='ERC20 address'
+                  border='none'
+                  bg='rgb(247, 248, 250)'
+                  onChange={(e) => {
+                    setTradeWith((prevState) => ({
+                      ...prevState,
+                      tokenAddress: e.target.value
+                    }));
+                    setNeedAllowance(false);
+                  }}
+                  mr='10px'
+                  fontSize='.8rem'
+                />
+                <NumberInput min={1} maxW={24}>
+                  <NumberInputField
+                    placeholder='Qty'
+                    border='none'
+                    bg='rgb(247, 248, 250)'
+                    onChange={(e) => {
+                      setTradeWith((prevState) => ({
+                        ...prevState,
+                        numberOfTokens: e.target.value
+                      }));
+                      setNeedAllowance(false);
+                    }}
+                    fontSize='.8rem'
+                  />
+                </NumberInput>
+              </Flex>
+
+              <Tag
+                ml='auto'
+                mt='5px'
+                fontFamily='figTree'
+              >{`Your balance: ${tradeWith.walletBalance} ${tradeWith.tokenTicker}`}</Tag>
+            </Flex>
+
+            <Flex
+              w='100%'
+              direction='column'
+              bg='white'
+              boxShadow='rgb(0 0 0 / 1%) 0px 0px 1px, rgb(0 0 0 / 4%) 0px 4px 8px, rgb(0 0 0 / 4%) 0px 16px 24px, rgb(0 0 0 / 1%) 0px 24px 32px'
+              borderRadius='1rem'
+              p='2rem'
+            >
+              <Flex direction='row' alignItems='center'>
+                <Text
+                  fontFamily='figTree'
+                  color='blackDark'
+                  py='1rem'
+                  mr='10px'
+                  fontSize='1rem'
+                  fontWeight='bold'
+                >
+                  Trade for
+                </Text>
+                <Tooltip label='The token you want to buy.' placement='right'>
+                  <i className='fa-solid fa-circle-question'></i>
+                </Tooltip>
+              </Flex>
+              <Flex direction='row'>
+                <Input
+                  placeholder='ERC20 address'
+                  border='none'
+                  bg='rgb(247, 248, 250)'
+                  onChange={(e) => {
+                    setTradeFor((prevState) => ({
+                      ...prevState,
+                      tokenAddress: e.target.value
+                    }));
+                    setNeedAllowance(false);
+                  }}
+                  mr='10px'
+                  fontSize='.8rem'
+                />
+                <NumberInput min={1} maxW={24}>
+                  <NumberInputField
+                    placeholder='Qty'
+                    border='none'
+                    bg='rgb(247, 248, 250)'
+                    onChange={(e) => {
+                      setTradeFor((prevState) => ({
+                        ...prevState,
+                        numberOfTokens: e.target.value
+                      }));
+                      setNeedAllowance(false);
+                    }}
+                    fontSize='.8rem'
+                  />
+                </NumberInput>
+              </Flex>
+
+              <Tag
+                ml='auto'
+                mt='5px'
+                fontFamily='figTree'
+              >{`Your balance: ${tradeFor.walletBalance} ${tradeFor.tokenTicker}`}</Tag>
+            </Flex>
+          </SimpleGrid>
+
+          <Flex
+            w='100%'
+            direction='row'
+            justifyContent='space-between'
+            alignItems='center'
+          >
+            <FormControl
+              isRequired
+              fontFamily='figTree'
+              color='black'
+              py='1rem'
+            >
+              <FormLabel as='legend'>
+                Trade expiry duration (in minutes)
+              </FormLabel>
+              <RadioBox
+                stack='horizontal'
+                options={['5', '15', '30']}
+                updateRadio={setExpiryDuration}
+                name='expiry_duration'
+                defaultValue={expiryDuration}
+                value={expiryDuration}
+              />
+            </FormControl>
+
+            <FormControl
+              isRequired
+              fontFamily='figTree'
+              color='black'
+              py='1rem'
+            >
+              <FormLabel as='legend'>Address of the receiver</FormLabel>
+              <Input
+                placeholder='Wallet address'
+                border='none'
+                bg='rgb(247, 248, 250)'
+                onChange={(e) => {
+                  setReceiverAddress(e.target.value);
+                  setNeedAllowance(false);
+                }}
+                mr='10px'
+                fontSize='.8rem'
+              />
+            </FormControl>
+          </Flex>
+
+          {!needAllowance && (
+            <Button
+              mt='1rem'
+              ml='auto'
+              bg='black'
+              color='white'
+              isDisabled={
+                !context.signerAddress ||
+                !utils.isAddress(tradeWith.tokenAddress) ||
+                !tradeWith.numberOfTokens ||
+                !utils.isAddress(receiverAddress) ||
+                !utils.isAddress(tradeFor.tokenAddress) ||
+                !tradeFor.numberOfTokens
+              }
+              isLoading={loading}
+              onClick={async () => {
+                setLoading(true);
+                await createOffer();
+                setLoading(false);
+              }}
+              _hover={{
+                opacity: 0.8
+              }}
+            >
+              Create Offer
+            </Button>
+          )}
+
+          {needAllowance && (
+            <Button
+              mt='1rem'
+              ml='auto'
+              bg='black'
+              color='white'
+              onClick={setAllowance}
+              isLoading={loading}
+              _hover={{
+                opacity: 0.8
+              }}
+            >
+              {`Approve ${tradeWith.tokenTicker}`}
+            </Button>
+          )}
+
+          <ChakraLink
+            href={`https://goerli.etherscan.io/tx/${txHash}`}
+            isExternal
+            ml='auto'
+            textDecoration='underline'
+            fontFamily='openSans'
+            px='2'
+            py='1'
+            mt='1rem'
+            fontSize='.8rem'
+            visibility={txHash ? 'visible' : 'hidden'}
+          >
+            View transaction..
+          </ChakraLink>
+        </>
       )}
 
-      {needAllowance && (
-        <Button
-          mt='1rem'
-          ml='auto'
-          bg='black'
-          color='white'
-          onClick={setAllowance}
-          isLoading={loading}
-          _hover={{
-            opacity: 0.8
-          }}
-        >
-          {`Approve ${tradeWith.tokenTicker}`}
-        </Button>
+      {latestTradeId && (
+        <>
+          <Text fontFamily='openSans' mt='2rem' fontSize='1.5rem'>
+            Trade created successfully!
+          </Text>
+          <HStack gap='1' mt='2rem'>
+            <Button
+              bg='black'
+              color='white'
+              onClick={() => router.push(`/trade/${latestTradeId - 1}`)}
+              _hover={{
+                opacity: 0.8
+              }}
+            >
+              View trade
+            </Button>
+            <Button
+              bg='black'
+              color='white'
+              onClick={() => router.push('/dashboard')}
+              _hover={{
+                opacity: 0.8
+              }}
+            >
+              View all trades
+            </Button>
+            <Button
+              color='white'
+              bg='black'
+              onClick={() => setLatestTradeId(null)}
+              _hover={{
+                opacity: 0.8
+              }}
+            >
+              New trade
+            </Button>
+          </HStack>
+        </>
       )}
-
-      <ChakraLink
-        href={`https://goerli.etherscan.io/tx/${txHash}`}
-        isExternal
-        ml='auto'
-        textDecoration='underline'
-        fontFamily='openSans'
-        px='2'
-        py='1'
-        mt='1rem'
-        fontSize='.8rem'
-        visibility={txHash ? 'visible' : 'hidden'}
-      >
-        View transaction..
-      </ChakraLink>
     </Flex>
   );
 }

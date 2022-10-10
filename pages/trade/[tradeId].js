@@ -476,7 +476,6 @@ const Trade = ({ tradeId }) => {
                 )}
                 {needAllowance && (
                   <Button
-                    mt='1rem'
                     ml='auto'
                     bg='black'
                     color='white'

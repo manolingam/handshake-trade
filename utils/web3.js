@@ -1,5 +1,7 @@
 import { Contract, utils } from 'ethers';
 
+import { TRADE_FEE } from './constants';
+
 export const approveSpender = async (
   ethersProvider,
   contractAddress,
@@ -73,7 +75,7 @@ export const createTrade = async (
   tradeDuration
 ) => {
   const abiInterface = new utils.Interface([
-    'function createOpenTradeOffer(address _offeredTokenAddress, uint _numberOfTokensOffered, address _receiverAddress, address _requiredTokenAddress, uint _numberOfRequiredTokens, uint _tradeOpenDuration) public'
+    'function createOpenTradeOffer(address _offeredTokenAddress, uint _numberOfTokensOffered, address _receiverAddress, address _requiredTokenAddress, uint _numberOfRequiredTokens, uint _tradeOpenDuration) public payable'
   ]);
   const contract = new Contract(
     contractAddress,
@@ -86,7 +88,10 @@ export const createTrade = async (
     receiverAddress,
     requiredTokenAddress,
     numberOfRequiredTokens,
-    tradeDuration
+    tradeDuration,
+    {
+      value: TRADE_FEE
+    }
   );
 };
 
@@ -108,12 +113,20 @@ export const claimStakeBack = async (
 
 export const finishTrade = async (ethersProvider, contractAddress, tradeId) => {
   const abiInterface = new utils.Interface([
-    'function finishOpenTrade(uint _tradeId) public'
+    'function finishOpenTrade(uint _tradeId) public payable'
   ]);
   const contract = new Contract(
     contractAddress,
     abiInterface,
     ethersProvider.getSigner()
   );
-  return contract.finishOpenTrade(tradeId);
+  return contract.finishOpenTrade(tradeId, { value: TRADE_FEE });
+};
+
+export const getLatestTradeId = async (ethersProvider, contractAddress) => {
+  const abiInterface = new utils.Interface([
+    'function numberOfTradesCreated() public view returns (uint)'
+  ]);
+  const contract = new Contract(contractAddress, abiInterface, ethersProvider);
+  return contract.numberOfTradesCreated();
 };
